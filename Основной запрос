@@ -1,0 +1,125 @@
+------------------- GA данные --------------------------
+WITH ga as(
+  SELECT
+    date as date,
+    CASE
+      WHEN REGEXP_CONTAINS(source, r'yd|yandex') THEN 'Яндекс.Директ'
+      WHEN REGEXP_CONTAINS(source, r'mt|mytarget') THEN 'MyTarget'
+      WHEN REGEXP_CONTAINS(source, r'vk|vkontakte') THEN 'VKontakte'
+      WHEN REGEXP_CONTAINS(source, r'criteo') THEN 'Criteo'
+      WHEN REGEXP_CONTAINS(source, r'rtb') THEN 'RTBHouse'
+      ELSE 'Не определён'                       
+    END as source,                 
+    campaign as campaign_name,
+    null as impressions,
+    null as clicks,
+    null as cost,
+    SUM(sessions) as sessions,
+    SUM(goal10Completions) as goal_10
+  FROM
+    `clarins-adv.For_Reports.google_analytics_ga_campaign`  -- меняем на нужный нам проект, датасет и таблицу
+  GROUP BY date, source, campaign_name
+),
+ 
+------------------- Яндекс.Директ --------------------------
+yd as(
+  SELECT
+    Date as date,
+    "Яндекс.Директ" as source,
+    CampaignName as campaign_name,
+    SUM(Impressions) as impressions,
+    SUM(Clicks) as clicks,
+    SUM(Cost) as cost,
+    null as sessions,
+    null as goal_10
+  FROM
+      `clarins-adv.For_Reports.yandex_direct_campaign_stat_Clarins_main_rw` as yd  -- меняем на нужный нам проект, датасет и таблицу
+  GROUP BY date, source, campaign_name
+),
+ 
+------------------- ВКонтакте --------------------------
+vk as(
+  SELECT
+    day as date,
+    "VKontakte" as source,
+    campaign.name as campaign_name,
+    SUM(impressions) as impressions,
+    SUM(clicks) as clicks,
+    SUM(spent) / 1.2 as cost, --без НДС
+    null as sessions,
+    null as goal_10
+  FROM
+    `clarins-adv.For_Reports.vk_campaign_stat_1900000033_1606977492`   -- меняем на нужный нам проект, датасет и таблицу
+  GROUP BY date, source, campaign_name
+),
+ 
+------------------- MyTarget --------------------------
+mt as(
+  SELECT
+    date as date,
+    "MyTarget" as source,
+    campaign.name as campaign_name,
+    SUM(base.shows) as impressions,
+    SUM(base.clicks) as clicks,
+    SUM(base.spent) as cost,
+    null as sessions,
+    null as goal_10
+  FROM
+    `clarins-adv.For_Reports.mytarget_campaign_stat_b94c811e36_agency_client`  -- меняем на нужный нам проект, датасет и таблицу
+  GROUP BY date, source, campaign_name
+),
+ 
+------------------- Criteo --------------------------
+criteo as(
+SELECT
+  Day as date,
+  "Criteo" as source,
+  CampaignName as campaign_name,
+  SUM(Displays) as impressions,
+  SUM(Clicks) as clicks,
+  SUM(AdvertiserCost) as cost,
+  null as sessions,
+  null as goal_10
+FROM
+  `clarins-adv.For_Reports.criteo_rest_campaign_stat`   -- меняем на нужный нам проект, датасет и таблицу
+GROUP BY date, source, campaign_name
+),
+ 
+------------------- RTBHouse --------------------------
+rtb as(
+  SELECT
+    Day as date,
+    "RTBHouse" as source,
+    subcampaign as campaign_name,
+    SUM(impsCount) as impressions,
+    SUM(clicksCount) as clicks,
+    SUM(campaignCost) as cost,
+    null as sessions,
+    null as goal_10
+  FROM
+    `clarins-adv.For_Reports.rtb_house_summary_stats_Bha4EBLB6G1orGqfVlvf`  -- меняем на нужный нам проект, датасет и таблицу
+  GROUP BY date, source, campaign_name
+)
+ 
+SELECT * FROM ga
+ 
+UNION ALL
+ 
+SELECT * FROM yd
+ 
+UNION ALL
+ 
+SELECT * FROM vk
+ 
+UNION ALL
+ 
+SELECT * FROM mt
+ 
+UNION ALL
+ 
+SELECT * FROM criteo
+ 
+UNION ALL
+ 
+SELECT * FROM rtb
+
